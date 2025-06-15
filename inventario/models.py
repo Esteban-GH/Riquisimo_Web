@@ -1,5 +1,3 @@
-from decimal import Decimal
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
@@ -13,7 +11,7 @@ class Producto(models.Model):
     ]
     
     nombre = models.CharField(max_length=100)
-    cantidad = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    cantidad = models.IntegerField(validators=[MinValueValidator(0)])  # Cambiado a IntegerField
     unidad = models.CharField(max_length=10, choices=UNIDADES)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
@@ -22,7 +20,7 @@ class Producto(models.Model):
 
 class Merma(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    cantidad = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
+    cantidad = models.IntegerField(validators=[MinValueValidator(1)])  # Cambiado a IntegerField, mínimo 1
     motivo = models.TextField()
     fecha_registro = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)

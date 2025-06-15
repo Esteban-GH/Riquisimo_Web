@@ -20,44 +20,61 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
-    <div class="card shadow-lg">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th class="text-end">Stock</th>
-                            <th class="text-center">Unidad</th>
-                            <th class="text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for producto in productos %}
-                        <tr data-id="{{ producto.id }}">
-                            <td class="editable" data-field="nombre">{{ producto.nombre }}</td>
-                            <td class="text-end editable" data-field="cantidad">{{ producto.cantidad|floatformat:2 }}</td>
-                            <td class="text-center editable" data-field="unidad" data-value="{{ producto.unidad }}">
-                                {{ producto.get_unidad_display }}
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-danger btn-eliminar">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-warning btn-merma ms-1">
-                                    <i class="bi bi-clipboard-minus"></i> Merma
-                                </button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center">No hay productos registrados</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="row">
+        {% for producto in productos %}
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm position-relative">
+                <button class="btn btn-sm btn-danger btn-eliminar position-absolute top-0 end-0 m-2 rounded-circle" 
+                        data-id="{{ producto.id }}"
+                        style="width: 30px; height: 30px; padding: 0;">
+                    <i class="bi bi-trash"></i>
+                </button>
+                
+                <div class="card-body">
+                    <h5 class="card-title">{{ producto.nombre }}</h5>
+                    <p class="card-text mb-3">
+                        <strong>Stock:</strong> <span class="stock-value">{{ producto.cantidad }}</span> {{ producto.get_unidad_display }}
+                    </p>
+                    
+                    <div class="d-flex justify-content-between gap-2">
+                        <!-- Botón Agregar -->
+                        <button class="btn btn-sm btn-success btn-agregar flex-grow-1"
+                                data-id="{{ producto.id }}"
+                                data-nombre="{{ producto.nombre }}"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="Agregar stock">
+                            <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">Agregar</span>
+                        </button>
+                        
+                        <!-- Botón Quitar -->
+                        <button class="btn btn-sm btn-danger btn-quitar flex-grow-1"
+                                data-id="{{ producto.id }}"
+                                data-nombre="{{ producto.nombre }}"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="Quitar stock">
+                            <i class="bi bi-dash-circle"></i> <span class="d-none d-md-inline">Quitar</span>
+                        </button>
+                        
+                        <!-- Botón Merma -->
+                        <button class="btn btn-sm btn-warning btn-merma flex-grow-1"
+                                data-id="{{ producto.id }}"
+                                data-nombre="{{ producto.nombre }}"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="Registrar merma">
+                            <i class="bi bi-clipboard-minus"></i> <span class="d-none d-md-inline">Merma</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No hay productos registrados</div>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
@@ -80,7 +97,7 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label">Cantidad</label>
-              <input type="number" step="0.01" min="0" class="form-control" name="cantidad" required>
+              <input type="number" step="1" min="0" class="form-control" name="cantidad" required>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Unidad</label>
@@ -105,9 +122,9 @@
 <div class="modal fade" id="mermaModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header bg-warning">
+      <div class="modal-header bg-warning text-white">
         <h5 class="modal-title">Registrar Merma</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form id="formMerma" method="post">
         {% csrf_token %}
@@ -124,7 +141,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Cantidad a Descontar</label>
-            <input type="number" step="0.01" min="0.01" class="form-control" name="cantidad" required>
+            <input type="number" step="1" min="1" class="form-control" name="cantidad" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Motivo</label>
@@ -140,132 +157,320 @@
   </div>
 </div>
 
+<!-- Modal Agregar Stock -->
+<div class="modal fade" id="agregarStockModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">Agregar Stock</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formAgregarStock" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="operation" value="agregar_stock">
+        <input type="hidden" name="producto_id" id="agregarStockProductoId">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Producto</label>
+            <input type="text" class="form-control" id="agregarStockProductoNombre" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Stock Actual</label>
+            <input type="text" class="form-control" id="agregarStockActual" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Cantidad a Agregar</label>
+            <input type="number" step="1" min="1" class="form-control" name="cantidad" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Agregar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Quitar Stock -->
+<div class="modal fade" id="quitarStockModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Quitar Stock</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formQuitarStock" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="operation" value="quitar_stock">
+        <input type="hidden" name="producto_id" id="quitarStockProductoId">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Producto</label>
+            <input type="text" class="form-control" id="quitarStockProductoNombre" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Stock Actual</label>
+            <input type="text" class="form-control" id="quitarStockActual" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Cantidad a Quitar</label>
+            <input type="number" step="1" min="1" class="form-control" name="cantidad" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Quitar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
 {% block scripts %}
 <script>
 $(document).ready(function() {
-
-    // Asegura que no se duplique el evento submit
-    $('#formAgregarProducto').off('submit').on('submit', function(e) {
-        e.preventDefault();
-
-        const form = $(this);
-        const formData = form.serialize();
-
-        $.ajax({
-            url: window.location.href,
-            method: 'POST',
-            data: formData,
-            success: function(response) {
-                if (response.success) {
-                    $('#agregarProductoModal').modal('hide');
-                    form[0].reset();
-
-                    $('#mensajeTexto').text(`Producto "${response.producto.nombre}" agregado correctamente.`);
-                    $('#mensajeExito').removeClass('d-none');
-
-                    setTimeout(() => location.reload(), 1500);
-                }
-            },
-            error: function(xhr) {
-                alert('❌ Ocurrió un error al agregar el producto.');
-                console.error(xhr.responseJSON);
+    // Configurar CSRF para todas las solicitudes AJAX
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                const token = $('[name=csrfmiddlewaretoken]').val();
+                console.log('CSRF Token:', token);
+                xhr.setRequestHeader("X-CSRFToken", token);
             }
-        });
+        }
     });
 
-    $('.btn-merma').click(function() {
-        const productoId = $(this).closest('tr').data('id');
-        const productoNombre = $(this).closest('tr').find('td:eq(0)').text();
-        const stockActual = $(this).closest('tr').find('td:eq(1)').text();
+    // Activar tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
 
+    // Corregir error de accesibilidad al cerrar modales
+    $('#agregarProductoModal, #agregarStockModal, #quitarStockModal, #mermaModal').on('hidden.bs.modal', function () {
+        $(this).find('.btn-close').blur(); // Quitar el foco del botón de cierre
+    });
+
+    // Botón agregar stock
+    $('.btn-agregar').click(function() {
+        console.log('Botón Agregar clicado');
+        const productoId = $(this).data('id');
+        const productoNombre = $(this).data('nombre');
+        const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+        
+        $('#agregarStockProductoId').val(productoId);
+        $('#agregarStockProductoNombre').val(productoNombre);
+        $('#agregarStockActual').val(stockActual);
+        $('#agregarStockModal').modal('show');
+    });
+
+    // Botón quitar stock
+    $('.btn-quitar').click(function() {
+        console.log('Botón Quitar clicado');
+        const productoId = $(this).data('id');
+        const productoNombre = $(this).data('nombre');
+        const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+        
+        $('#quitarStockProductoId').val(productoId);
+        $('#quitarStockProductoNombre').val(productoNombre);
+        $('#quitarStockActual').val(stockActual);
+        $('#quitarStockModal').modal('show');
+    });
+
+    // Botón merma
+    $('.btn-merma').click(function() {
+        console.log('Botón Merma clicado');
+        const productoId = $(this).data('id');
+        const productoNombre = $(this).data('nombre');
+        const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+        
         $('#mermaProductoId').val(productoId);
         $('#mermaProductoNombre').val(productoNombre);
         $('#mermaStockActual').val(stockActual);
         $('#mermaModal').modal('show');
     });
 
+    // Botón eliminar
     $('.btn-eliminar').click(function() {
-        if (confirm('¿Estás seguro de eliminar este producto?')) {
-            const productoId = $(this).closest('tr').data('id');
-
+        console.log('Botón Eliminar clicado');
+        const productoId = $(this).data('id');
+        if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
             $.ajax({
                 url: window.location.href,
                 method: 'POST',
                 data: {
-                    'operation': 'delete',
-                    'id': productoId,
-                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    operation: 'delete',
+                    id: productoId,
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
                 },
                 success: function(response) {
+                    console.log('Respuesta eliminar:', response);
                     if (response.success) {
-                        location.reload();
+                        $(`[data-id="${productoId}"]`).closest('.col-xl-3').remove();
+                        $('#mensajeTexto').text('Producto eliminado correctamente');
+                        $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
                     }
+                },
+                error: function(xhr) {
+                    console.error('Error eliminar:', xhr.responseJSON);
+                    const errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                        ? xhr.responseJSON.error 
+                        : 'Error al eliminar el producto';
+                    alert(errorMsg);
                 }
             });
         }
     });
 
-    $('.editable').click(function() {
-        const field = $(this).data('field');
-        const value = $(this).data('value') || $(this).text().trim();
-        const $td = $(this);
-        const productoId = $td.closest('tr').data('id');
-
-        let $input;
-
-        if (field === 'unidad') {
-            $input = $(`<select class="form-control form-control-sm">
-                {% for value, label in unidades.items %}
-                <option value="{{ value }}" ${value === '{{ value }}' ? 'selected' : ''}>{{ label }}</option>
-                {% endfor %}
-            </select>`);
-        } else {
-            const inputType = field === 'cantidad' ? 'number' : 'text';
-            $input = $(`<input type="${inputType}" class="form-control form-control-sm" value="${value}">`);
-            if (field === 'cantidad') {
-                $input.attr('step', '0.01').attr('min', '0');
-            }
-        }
-
-        $td.html($input);
-        $input.focus();
-
-        const guardarCambio = function() {
-            const newValue = $input.val();
-
-            $.ajax({
-                url: window.location.href,
-                method: 'POST',
-                data: {
-                    'operation': 'update',
-                    'id': productoId,
-                    field: newValue,
-                    'csrfmiddlewaretoken': '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        if (field === 'unidad') {
-                            $td.data('value', newValue);
-                            $td.text(response.unidad_display);
-                        } else {
-                            $td.text(field === 'cantidad' ? parseFloat(newValue).toFixed(2) : newValue);
-                        }
-                    } else {
-                        location.reload();
-                    }
+    // Formulario agregar producto
+    $('#formAgregarProducto').submit(function(e) {
+        e.preventDefault();
+        console.log('Formulario Agregar Producto enviado');
+        const form = $(this);
+        
+        $.ajax({
+            url: window.location.href,
+            method: 'POST',
+            data: form.serialize(),
+            success: function(response) {
+                console.log('Respuesta agregar producto:', response);
+                if (response.success) {
+                    $('#agregarProductoModal').modal('hide');
+                    form[0].reset();
+                    $('#mensajeTexto').text(`Producto ${response.producto.nombre} agregado correctamente`);
+                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
+                    location.reload(); // Recarga para mostrar el nuevo producto
                 }
-            });
-        };
-
-        $input.blur(guardarCambio);
-        $input.keypress(function(e) {
-            if (e.which === 13) {
-                guardarCambio();
+            },
+            error: function(xhr) {
+                console.error('Error agregar producto:', xhr.responseJSON);
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                    ? JSON.stringify(xhr.responseJSON.error) 
+                    : 'Error al agregar el producto';
+                alert(errorMsg);
             }
         });
     });
 
+    // Formulario agregar stock
+    $('#formAgregarStock').submit(function(e) {
+        e.preventDefault();
+        console.log('Formulario Agregar Stock enviado');
+        const form = $(this);
+        
+        $.ajax({
+            url: window.location.href,
+            method: 'POST',
+            data: form.serialize(),
+            success: function(response) {
+                console.log('Respuesta agregar stock:', response);
+                if (response.success) {
+                    $('#agregarStockModal').modal('hide');
+                    form[0].reset();
+                    
+                    // Actualizar el stock en la tarjeta
+                    const stockElement = $(`.btn-agregar[data-id="${response.producto_id}"]`).closest('.card-body').find('.stock-value');
+                    console.log('Stock element:', stockElement);
+                    if (stockElement.length) {
+                        stockElement.text(response.nuevo_stock);
+                    } else {
+                        console.error('No se encontró el elemento .stock-value para producto_id:', response.producto_id);
+                    }
+                    
+                    // Mostrar mensaje de éxito
+                    $('#mensajeTexto').text(`Stock actualizado: ${response.producto_nombre} - Nuevo stock: ${response.nuevo_stock}`);
+                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error agregar stock:', xhr.responseJSON);
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                    ? xhr.responseJSON.error 
+                    : 'Error al actualizar el stock';
+                alert(errorMsg);
+            }
+        });
+    });
+
+    // Formulario quitar stock
+    $('#formQuitarStock').submit(function(e) {
+        e.preventDefault();
+        console.log('Formulario Quitar Stock enviado');
+        const form = $(this);
+        
+        $.ajax({
+            url: window.location.href,
+            method: 'POST',
+            data: form.serialize(),
+            success: function(response) {
+                console.log('Respuesta quitar stock:', response);
+                if (response.success) {
+                    $('#quitarStockModal').modal('hide');
+                    form[0].reset();
+                    
+                    // Actualizar el stock en la tarjeta
+                    const stockElement = $(`.btn-quitar[data-id="${response.producto_id}"]`).closest('.card-body').find('.stock-value');
+                    console.log('Stock element:', stockElement);
+                    if (stockElement.length) {
+                        stockElement.text(response.nuevo_stock);
+                    } else {
+                        console.error('No se encontró el elemento .stock-value para producto_id:', response.producto_id);
+                    }
+                    
+                    // Mostrar mensaje de éxito
+                    $('#mensajeTexto').text(`Stock actualizado: ${response.producto_nombre} - Nuevo stock: ${response.nuevo_stock}`);
+                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error quitar stock:', xhr.responseJSON);
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                    ? xhr.responseJSON.error 
+                    : 'Error al actualizar el stock';
+                alert(errorMsg);
+            }
+        });
+    });
+
+    // Formulario merma
+    $('#formMerma').submit(function(e) {
+        e.preventDefault();
+        console.log('Formulario Merma enviado');
+        const form = $(this);
+        
+        $.ajax({
+            url: window.location.href,
+            method: 'POST',
+            data: form.serialize(),
+            success: function(response) {
+                console.log('Respuesta merma:', response);
+                if (response.success) {
+                    $('#mermaModal').modal('hide');
+                    form[0].reset();
+                    
+                    // Actualizar el stock en la tarjeta
+                    const stockElement = $(`.btn-merma[data-id="${response.producto_id}"]`).closest('.card-body').find('.stock-value');
+                    console.log('Stock element:', stockElement);
+                    if (stockElement.length) {
+                        stockElement.text(response.nuevo_stock);
+                    } else {
+                        console.error('No se encontró el elemento .stock-value para producto_id:', response.producto_id);
+                    }
+                    
+                    // Mostrar mensaje de éxito
+                    $('#mensajeTexto').text(`Merma registrada: ${response.producto_nombre} - Nuevo stock: ${response.nuevo_stock}`);
+                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error merma:', xhr.responseJSON);
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.error 
+                    ? xhr.responseJSON.error 
+                    : 'Error al registrar merma';
+                alert(errorMsg);
+            }
+        });
+    });
 });
 </script>
-{% endblock %}
 {% endblock %}
