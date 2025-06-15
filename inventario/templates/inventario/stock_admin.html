@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-5">Gestión de Inventario</h1>
+            <p class="lead">Bienvenido, {{ user.username }}</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
+                <i class="bi bi-plus-circle"></i> Nuevo Producto
+            </button>
+        </div>
+    </div>
+
+    <div id="mensajeExito" class="alert alert-success alert-dismissible fade show d-none" role="alert">
+        <span id="mensajeTexto"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-end">Stock</th>
+                            <th class="text-center">Unidad</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos %}
+                        <tr data-id="{{ producto.id }}">
+                            <td class="editable" data-field="nombre">{{ producto.nombre }}</td>
+                            <td class="text-end editable" data-field="cantidad">{{ producto.cantidad|floatformat:2 }}</td>
+                            <td class="text-center editable" data-field="unidad" data-value="{{ producto.unidad }}">
+                                {{ producto.get_unidad_display }}
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger btn-eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning btn-merma ms-1">
+                                    <i class="bi bi-clipboard-minus"></i> Merma
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No hay productos registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Agregar Producto -->
+<div class="modal fade" id="agregarProductoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Agregar Nuevo Producto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formAgregarProducto" method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="operation" value="create">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nombre del Producto</label>
+            <input type="text" class="form-control" name="nombre" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Cantidad</label>
+              <input type="number" step="0.01" min="0" class="form-control" name="cantidad" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Unidad</label>
+              <select class="form-select" name="unidad" required>
+                {% for value, label in unidades.items %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Merma -->
+<div class="modal fade" id="mermaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">Registrar Merma</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formMerma" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="operation" value="merma">
+        <input type="hidden" name="producto_id" id="mermaProductoId">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Producto</label>
+            <input type="text" class="form-control" id="mermaProductoNombre" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Stock Actual</label>
+            <input type="text" class="form-control" id="mermaStockActual" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Cantidad a Descontar</label>
+            <input type="number" step="0.01" min="0.01" class="form-control" name="cantidad" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Motivo</label>
+            <textarea class="form-control" name="motivo" rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning">Registrar Merma</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+
+    // Asegura que no se duplique el evento submit
+    $('#formAgregarProducto').off('submit').on('submit', function(e) {
+        e.preventDefault();
+
+        const form = $(this);
+        const formData = form.serialize();
+
+        $.ajax({
+            url: window.location.href,
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    $('#agregarProductoModal').modal('hide');
+                    form[0].reset();
+
+                    $('#mensajeTexto').text(`Producto "${response.producto.nombre}" agregado correctamente.`);
+                    $('#mensajeExito').removeClass('d-none');
+
+                    setTimeout(() => location.reload(), 1500);
+                }
+            },
+            error: function(xhr) {
+                alert('❌ Ocurrió un error al agregar el producto.');
+                console.error(xhr.responseJSON);
+            }
+        });
+    });
+
+    $('.btn-merma').click(function() {
+        const productoId = $(this).closest('tr').data('id');
+        const productoNombre = $(this).closest('tr').find('td:eq(0)').text();
+        const stockActual = $(this).closest('tr').find('td:eq(1)').text();
+
+        $('#mermaProductoId').val(productoId);
+        $('#mermaProductoNombre').val(productoNombre);
+        $('#mermaStockActual').val(stockActual);
+        $('#mermaModal').modal('show');
+    });
+
+    $('.btn-eliminar').click(function() {
+        if (confirm('¿Estás seguro de eliminar este producto?')) {
+            const productoId = $(this).closest('tr').data('id');
+
+            $.ajax({
+                url: window.location.href,
+                method: 'POST',
+                data: {
+                    'operation': 'delete',
+                    'id': productoId,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    }
+                }
+            });
+        }
+    });
+
+    $('.editable').click(function() {
+        const field = $(this).data('field');
+        const value = $(this).data('value') || $(this).text().trim();
+        const $td = $(this);
+        const productoId = $td.closest('tr').data('id');
+
+        let $input;
+
+        if (field === 'unidad') {
+            $input = $(`<select class="form-control form-control-sm">
+                {% for value, label in unidades.items %}
+                <option value="{{ value }}" ${value === '{{ value }}' ? 'selected' : ''}>{{ label }}</option>
+                {% endfor %}
+            </select>`);
+        } else {
+            const inputType = field === 'cantidad' ? 'number' : 'text';
+            $input = $(`<input type="${inputType}" class="form-control form-control-sm" value="${value}">`);
+            if (field === 'cantidad') {
+                $input.attr('step', '0.01').attr('min', '0');
+            }
+        }
+
+        $td.html($input);
+        $input.focus();
+
+        const guardarCambio = function() {
+            const newValue = $input.val();
+
+            $.ajax({
+                url: window.location.href,
+                method: 'POST',
+                data: {
+                    'operation': 'update',
+                    'id': productoId,
+                    field: newValue,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        if (field === 'unidad') {
+                            $td.data('value', newValue);
+                            $td.text(response.unidad_display);
+                        } else {
+                            $td.text(field === 'cantidad' ? parseFloat(newValue).toFixed(2) : newValue);
+                        }
+                    } else {
+                        location.reload();
+                    }
+                }
+            });
+        };
+
+        $input.blur(guardarCambio);
+        $input.keypress(function(e) {
+            if (e.which === 13) {
+                guardarCambio();
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %}
+{% endblock %}
