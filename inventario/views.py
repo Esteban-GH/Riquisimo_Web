@@ -16,6 +16,17 @@ def stock_publico(request):
         'productos': productos
     })
 
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.contrib.auth.views import LoginView
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
+from django.contrib.auth import logout
+from django.core.exceptions import ValidationError
+from .models import Producto, Merma
+from .forms import ProductoForm
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def stock_admin(request):
@@ -31,7 +42,7 @@ def stock_admin(request):
                     'producto': {
                         'id': producto.id,
                         'nombre': producto.nombre,
-                        'cantidad': float(producto.cantidad),
+                        'cantidad': producto.cantidad,
                         'unidad': producto.unidad,
                         'unidad_display': producto.get_unidad_display(),
                     }
@@ -52,38 +63,35 @@ def stock_admin(request):
             producto = get_object_or_404(Producto, pk=producto_id)
 
             try:
-                cantidad = Decimal(cantidad)
+                cantidad = int(cantidad)
                 if cantidad <= 0:
                     raise ValueError
-            except (ValueError, InvalidOperation):
-                return JsonResponse({'success': False, 'error': {'cantidad': 'Cantidad inválida'}}, status=400)
-
-            if cantidad > producto.cantidad:
-                return JsonResponse({'success': False, 'error': {'cantidad': 'No hay suficiente stock'}}, status=400)
+            except (ValueError, TypeError):
+                return JsonResponse({
+                    'success': False,
+                    'error': {'cantidad': 'Por favor, ingrese una cantidad válida (número entero mayor a 0).'}
+                }, status=400)
 
             merma = Merma(
-                producto=producto, 
-                cantidad=cantidad, 
-                motivo=motivo, 
+                producto=producto,
+                cantidad=cantidad,
+                motivo=motivo,
                 usuario=request.user
             )
 
             try:
-                merma.full_clean()
-                merma.save()
-                
-                # Actualizar stock del producto
-                producto.cantidad -= cantidad
-                producto.save()
-                
+                merma.save()  # El método save de Merma valida y actualiza el stock
                 return JsonResponse({
                     'success': True,
                     'producto_id': producto.id,
                     'producto_nombre': producto.nombre,
-                    'nuevo_stock': float(producto.cantidad)
+                    'nuevo_stock': producto.cantidad
                 })
             except ValidationError as e:
-                return JsonResponse({'success': False, 'error': e.message_dict}, status=400)
+                return JsonResponse({
+                    'success': False,
+                    'error': {'cantidad': str(e) if not e.message_dict else e.message_dict.get('cantidad', 'Error al registrar merma')}
+                }, status=400)
 
         elif operation == 'agregar_stock':
             producto_id = request.POST.get('producto_id')
@@ -92,11 +100,14 @@ def stock_admin(request):
             producto = get_object_or_404(Producto, pk=producto_id)
 
             try:
-                cantidad = Decimal(cantidad)
+                cantidad = int(cantidad)
                 if cantidad <= 0:
                     raise ValueError
-            except (ValueError, InvalidOperation):
-                return JsonResponse({'success': False, 'error': 'Cantidad inválida'}, status=400)
+            except (ValueError, TypeError):
+                return JsonResponse({
+                    'success': False,
+                    'error': {'cantidad': 'Por favor, ingrese una cantidad válida (número entero mayor a 0).'}
+                }, status=400)
 
             producto.cantidad += cantidad
             producto.save()
@@ -105,7 +116,7 @@ def stock_admin(request):
                 'success': True,
                 'producto_id': producto.id,
                 'producto_nombre': producto.nombre,
-                'nuevo_stock': float(producto.cantidad)
+                'nuevo_stock': producto.cantidad
             })
 
         elif operation == 'quitar_stock':
@@ -115,14 +126,20 @@ def stock_admin(request):
             producto = get_object_or_404(Producto, pk=producto_id)
 
             try:
-                cantidad = Decimal(cantidad)
+                cantidad = int(cantidad)
                 if cantidad <= 0:
                     raise ValueError
-            except (ValueError, InvalidOperation):
-                return JsonResponse({'success': False, 'error': 'Cantidad inválida'}, status=400)
+            except (ValueError, TypeError):
+                return JsonResponse({
+                    'success': False,
+                    'error': {'cantidad': 'Por favor, ingrese una cantidad válida (número entero mayor a 0).'}
+                }, status=400)
 
             if cantidad > producto.cantidad:
-                return JsonResponse({'success': False, 'error': 'No hay suficiente stock'}, status=400)
+                return JsonResponse({
+                    'success': False,
+                    'error': {'cantidad': f'No hay suficiente stock. Stock actual: {producto.cantidad}, intentaste quitar: {cantidad}'}
+                }, status=400)
 
             producto.cantidad -= cantidad
             producto.save()
@@ -131,7 +148,7 @@ def stock_admin(request):
                 'success': True,
                 'producto_id': producto.id,
                 'producto_nombre': producto.nombre,
-                'nuevo_stock': float(producto.cantidad)
+                'nuevo_stock': producto.cantidad
             })
 
     # GET request
@@ -139,6 +156,12 @@ def stock_admin(request):
     return render(request, 'inventario/stock_admin.html', {
         'productos': productos,
         'unidades': dict(Producto.UNIDADES)
+    })
+
+def stock_publico(request):
+    productos = Producto.objects.all().order_by('nombre')
+    return render(request, 'inventario/stock_publico.html', {
+        'productos': productos
     })
 
 def custom_logout(request):
