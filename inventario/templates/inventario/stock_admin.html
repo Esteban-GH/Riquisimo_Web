@@ -2,14 +2,19 @@
 {% load static %}
 
 {% block content %}
+<div class="logo-fullscreen mb-5">
+    <img src="{% static 'images/logo.jpg' %}" alt="Logo de la empresa" class="img-fluid w-100" style="height: auto;">
+</div>
+
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col">
             <h1 class="display-5">Gestión de Inventario</h1>
             <p class="lead">Bienvenido, {{ user.username }}</p>
         </div>
-        <div class="col-auto">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
+        <div class="col-auto d-flex align-items-center">
+            <!-- Botón Nuevo Producto -->
+            <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
                 <i class="bi bi-plus-circle"></i> Nuevo Producto
             </button>
         </div>
@@ -20,9 +25,21 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
-    <div class="row">
+    <!-- Barra de búsqueda movida a la izquierda -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" id="searchInput" class="form-control" placeholder="Buscar productos..." aria-label="Buscar productos">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="productList">
         {% for producto in productos %}
-        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-4" data-nombre="{{ producto.nombre|lower }}">
             <div class="card h-100 shadow-sm position-relative">
                 <button class="btn btn-sm btn-danger btn-eliminar position-absolute top-0 end-0 m-2 rounded-circle" 
                         data-id="{{ producto.id }}"
@@ -252,6 +269,25 @@ $(document).ready(function() {
     // Corregir error de accesibilidad al cerrar modales
     $('#agregarProductoModal, #agregarStockModal, #quitarStockModal, #mermaModal').on('hidden.bs.modal', function () {
         $(this).find('.btn-close').blur();
+    });
+
+    // Filtrado de productos en tiempo real
+    $('#searchInput').on('input', function() {
+        const query = $(this).val().trim().toLowerCase();
+        const productCards = $('#productList .col-xl-3');
+
+        if (query.length > 0) {
+            productCards.each(function() {
+                const productName = $(this).data('nombre');
+                if (productName.includes(query)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        } else {
+            productCards.show(); // Mostrar todos si el input está vacío
+        }
     });
 
     // Botón agregar stock

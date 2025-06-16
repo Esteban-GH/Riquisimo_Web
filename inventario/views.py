@@ -158,6 +158,25 @@ def stock_admin(request):
         'unidades': dict(Producto.UNIDADES)
     })
 
+def search_products(request):
+    if request.method == "GET":
+        query = request.GET.get('q', '')
+        if query:
+            # Filtra productos cuyos nombres contengan la consulta (case-insensitive)
+            products = Producto.objects.filter(nombre__icontains=query)[:10]  # Limita a 10 resultados
+            results = [
+                {
+                    'id': product.id,
+                    'nombre': product.nombre,
+                    'cantidad': product.cantidad,
+                    'unidad_display': product.get_unidad_display()
+                }
+                for product in products
+            ]
+            return JsonResponse({'results': results})
+        return JsonResponse({'results': []})
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
 def stock_publico(request):
     productos = Producto.objects.all().order_by('nombre')
     return render(request, 'inventario/stock_publico.html', {
