@@ -193,7 +193,17 @@
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'stock_admin' %}">
+                            <a class="nav-link" href="{% url 'inventario:registrar_admin' %}">
+                                <i class="bi bi-person-plus"></i> Registrar Admin
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'inventario:mermas_publico' %}">
+                                <i class="bi bi-clipboard-minus"></i> Ver Mermas Registradas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'inventario:stock_admin' %}">
                                 <i class="bi bi-clipboard-data"></i> Administrar Stock
                             </a>
                         </li>
@@ -204,7 +214,7 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}?next={% url 'stock_admin' %}">
+                            <a class="nav-link" href="{% url 'login' %}?next={% url 'inventario:stock_admin' %}">
                                 <i class="bi bi-box-arrow-in-right"></i> Acceso Administrador
                             </a>
                         </li>
@@ -235,7 +245,7 @@
                 <span class="text-white-50">Sistema de Gestión de Inventario</span>
             </div>
             <p class="mb-0">
-                <strong>Riquísimo Web</strong> &copy; {% now "Y" %} - Todos los derechos reservados
+                <strong>Riquísimo Web</strong> © {% now "Y" %} - Todos los derechos reservados
             </p>
         </div>
     </footer>
