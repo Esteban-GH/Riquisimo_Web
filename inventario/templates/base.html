@@ -181,39 +181,39 @@
     
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'stock_publico' %}">
-                <i class="bi bi-shop"></i> Riquísimo Web
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'stock_admin' %}">
-                                <i class="bi bi-clipboard-data"></i> Administrar Stock
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'logout' %}">
-                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}?next={% url 'stock_admin' %}">
-                                <i class="bi bi-box-arrow-in-right"></i> Acceso Administrador
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'stock_publico' %}">
+            <i class="bi bi-shop"></i> Riquísimo Web
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'inventario:stock_admin' %}"> <!-- Cambio aquí -->
+                            <i class="bi bi-clipboard-data"></i> Administrar Stock
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}?next={% url 'inventario:stock_admin' %}"> <!-- Cambio aquí -->
+                            <i class="bi bi-box-arrow-in-right"></i> Acceso Administrador
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
         </div>
-    </nav>
+    </div>
+</nav>
 
     <!-- Contenido Principal -->
     <main class="container my-4">

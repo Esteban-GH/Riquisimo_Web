@@ -17,6 +17,13 @@
             <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
                 <i class="bi bi-plus-circle"></i> Nuevo Producto
             </button>
+            <!-- Botón Mermas -->
+            <a href="{% url 'inventario:mermas_publico' %}" class="btn btn-info ms-2">
+                <i class="bi bi-clipboard-data"></i> Mermas
+            </a>
+            <a href="{% url 'inventario:registrar_admin' %}" class="btn btn-success ms-2">
+                <i class="bi bi-person-plus"></i> Registrar Usuario
+            </a>
         </div>
     </div>
 
@@ -253,7 +260,6 @@
 {% block scripts %}
 <script>
 $(document).ready(function() {
-    // Configurar CSRF para todas las solicitudes AJAX
     $.ajaxSetup({
         beforeSend: function(xhr, settings) {
             if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
@@ -263,15 +269,12 @@ $(document).ready(function() {
         }
     });
 
-    // Activar tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
 
-    // Corregir error de accesibilidad al cerrar modales
     $('#agregarProductoModal, #agregarStockModal, #quitarStockModal, #mermaModal').on('hidden.bs.modal', function () {
         $(this).find('.btn-close').blur();
     });
 
-    // Filtrado de productos en tiempo real
     $('#searchInput').on('input', function() {
         const query = $(this).val().trim().toLowerCase();
         const productCards = $('#productList .col-xl-3');
@@ -286,11 +289,10 @@ $(document).ready(function() {
                 }
             });
         } else {
-            productCards.show(); // Mostrar todos si el input está vacío
+            productCards.show();
         }
     });
 
-    // Botón agregar stock
     $('.btn-agregar').click(function() {
         const productoId = $(this).data('id');
         const productoNombre = $(this).data('nombre');
@@ -303,7 +305,6 @@ $(document).ready(function() {
         $('#agregarStockModal').modal('show');
     });
 
-    // Botón quitar stock
     $('.btn-quitar').click(function() {
         const productoId = $(this).data('id');
         const productoNombre = $(this).data('nombre');
@@ -316,7 +317,6 @@ $(document).ready(function() {
         $('#quitarStockModal').modal('show');
     });
 
-    // Botón merma
     $('.btn-merma').click(function() {
         const productoId = $(this).data('id');
         const productoNombre = $(this).data('nombre');
@@ -329,7 +329,6 @@ $(document).ready(function() {
         $('#mermaModal').modal('show');
     });
 
-    // Botón eliminar
     $('.btn-eliminar').click(function() {
         const productoId = $(this).data('id');
         if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
@@ -358,7 +357,6 @@ $(document).ready(function() {
         }
     });
 
-    // Formulario agregar producto
     $('#formAgregarProducto').submit(function(e) {
         e.preventDefault();
         const form = $(this);
@@ -387,7 +385,6 @@ $(document).ready(function() {
         });
     });
 
-    // Formulario agregar stock
     $('#formAgregarStock').submit(function(e) {
         e.preventDefault();
         const form = $(this);
@@ -428,7 +425,6 @@ $(document).ready(function() {
         });
     });
 
-    // Formulario quitar stock
     $('#formQuitarStock').submit(function(e) {
         e.preventDefault();
         const form = $(this);
@@ -474,7 +470,6 @@ $(document).ready(function() {
         });
     });
 
-    // Formulario merma
     $('#formMerma').submit(function(e) {
         e.preventDefault();
         const form = $(this);

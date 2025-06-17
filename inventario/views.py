@@ -9,6 +9,28 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from .models import Producto, Merma
 from .forms import ProductoForm
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.forms.models import model_to_dict
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
+from django.contrib.auth import logout
+from .models import Producto, Merma
+from .forms import ProductoForm
+from decimal import Decimal, InvalidOperation
+from django.core.exceptions import ValidationError
+from django import forms
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth import login, authenticate
+from .forms import AdminUserCreationForm
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
 
 def stock_publico(request):
     productos = Producto.objects.all().order_by('nombre')
@@ -199,3 +221,82 @@ class CustomLoginView(LoginView):
     def form_invalid(self, form):
         messages.error(self.request, 'Error: Usuario o contraseña incorrectos')
         return super().form_invalid(form)
+    
+def mermas_publico(request):
+    mermas = Merma.objects.select_related('producto', 'usuario').order_by('-fecha_registro')
+    return render(request, 'inventario/stock_publico', {  # Asegúrate de que esta plantilla exista
+        'mermas': mermas
+    })
+
+
+
+
+
+
+def registrar_admin(request):
+    if request.method == 'POST':
+        form = AdminUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, 'Usuario registrado y logueado exitosamente.')
+                return redirect('inventario:stock_admin')
+            else:
+                messages.error(request, 'Error al iniciar sesión después del registro.')
+
+    else:
+        form = AdminUserCreationForm()
+    return render(request, 'ingreso/registrar_admin.html', {'form': form})
+
+@login_required
+def mermas_publico(request):
+    mermas = Merma.objects.select_related('producto', 'usuario').order_by('-fecha_registro')
+    return render(request, 'inventario/mermas_publico.html', {  # Usa la plantilla correcta
+        'mermas': mermas
+    })
+
+
+@login_required
+def detalle_merma(request, merma_id):
+    merma = get_object_or_404(Merma, pk=merma_id)
+    return render(request, 'pantalla_merma/merma.html', {
+        'merma': merma
+    })
+def registrar_admin(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password1')  # Cambiado a password1 para coincidir con el formulario
+        password2 = request.POST.get('password2')
+        email = request.POST.get('email', '')
+
+        # Validar que las contraseñas coincidan
+        if password != password2:
+            messages.error(request, 'Las contraseñas no coinciden.')
+            return render(request, 'ingreso/registrar_admin.html', {
+                'form': {'username': username, 'email': email}
+            })
+
+        # Validar si el usuario ya existe
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'El nombre de usuario ya existe.')
+            return render(request, 'ingreso/registrar_admin.html', {
+                'form': {'username': username, 'email': email}
+            })
+
+        # Crear el usuario
+        try:
+            user = User.objects.create_user(username=username, password=password, email=email, is_staff=True)
+            login(request, user)
+            messages.success(request, 'Usuario registrado y logueado exitosamente.')
+            return redirect('inventario:stock_admin')
+        except Exception as e:
+            messages.error(request, f'Error al registrar el usuario: {str(e)}')
+            return render(request, 'ingreso/registrar_admin.html', {
+                'form': {'username': username, 'email': email}
+            })
+
+    return render(request, 'ingreso/registrar_admin.html', {'form': {}})
