@@ -15,12 +15,10 @@ def generar_reporte_mermas(mermas, mes, año):
     
     elementos = []
     
-    # Título
     elementos.append(Paragraph(f"Reporte de Mermas - {mes}/{año}", styles['Title']))
     elementos.append(Paragraph("Restaurante Riquísimo", styles['Normal']))
     elementos.append(Paragraph(" ", styles['Normal']))
     
-    # Datos de las mermas
     data = [['Producto', 'Cantidad', 'Unidad', 'Motivo', 'Usuario', 'Fecha']]
     
     for merma in mermas:
@@ -33,7 +31,6 @@ def generar_reporte_mermas(mermas, mes, año):
             merma.fecha_registro.strftime("%d/%m/%Y %H:%M")
         ])
     
-    # Tabla
     t = Table(data)
     t.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#732F48')),
@@ -48,11 +45,9 @@ def generar_reporte_mermas(mermas, mes, año):
     
     elementos.append(t)
     
-    # Total
     total = sum(m.cantidad for m in mermas)
     elementos.append(Paragraph(f"<br/><b>Total de productos perdidos: {total}</b>", styles['Normal']))
     
-    # Fecha generación
     elementos.append(Paragraph(f"<br/>Reporte generado el: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
     
     doc.build(elementos)

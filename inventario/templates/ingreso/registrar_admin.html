@@ -36,7 +36,6 @@
                     <form method="post" action="{% url 'inventario:registrar_admin' %}" class="needs-validation" novalidate autocomplete="off" id="registroForm">
                         {% csrf_token %}
 
-                        <!-- Usuario -->
                         <div class="mb-3 position-relative">
                             <label for="id_username" class="form-label fw-bold text-primary">Usuario</label>
                             <input type="text" name="username" class="form-control form-control-lg shadow-sm" id="id_username" required autocomplete="off" minlength="4" value="{{ form.username.value|default_if_none:'' }}">
@@ -54,7 +53,6 @@
                             </div>
                         </div>
 
-                        <!-- Contraseña -->
                         <div class="mb-3 position-relative">
                             <label for="id_password1" class="form-label fw-bold text-primary">Contraseña</label>
                             <input type="password" name="password1" class="form-control form-control-lg shadow-sm" id="id_password1" required autocomplete="new-password" minlength="8">
@@ -72,7 +70,6 @@
                             </div>
                         </div>
 
-                        <!-- Confirmar contraseña -->
                         <div class="mb-3 position-relative">
                             <label for="id_password2" class="form-label fw-bold text-primary">Confirmar Contraseña</label>
                             <input type="password" name="password2" class="form-control form-control-lg shadow-sm" id="id_password2" required autocomplete="new-password">
@@ -92,7 +89,6 @@
                             </div>
                         </div>
 
-                        <!-- Botón -->
                         <div class="mt-4 text-center">
                             <button type="submit" class="btn btn-primary btn-lg shadow-sm">
                                 <i class="bi bi-person-plus"></i> Registrar

@@ -33,9 +33,8 @@ class Merma(models.Model):
             })
     
     def save(self, *args, **kwargs):
-        self.full_clean()  # Ejecuta las validaciones (incluyendo clean)
+        self.full_clean() 
         
-        # Actualizar el stock del producto
         self.producto.cantidad -= self.cantidad
         self.producto.save()
         

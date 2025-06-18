@@ -95,7 +95,7 @@ def stock_admin(request):
             )
 
             try:
-                merma.save()  # El método save de Merma valida y actualiza el stock
+                merma.save()
                 return JsonResponse({
                     'success': True,
                     'producto_id': producto.id,
@@ -166,7 +166,6 @@ def stock_admin(request):
                 'nuevo_stock': producto.cantidad
             })
 
-    # GET request
     productos = Producto.objects.all().order_by('nombre')
     return render(request, 'inventario/stock_admin.html', {
         'productos': productos,
@@ -177,8 +176,7 @@ def search_products(request):
     if request.method == "GET":
         query = request.GET.get('q', '')
         if query:
-            # Filtra productos cuyos nombres contengan la consulta (case-insensitive)
-            products = Producto.objects.filter(nombre__icontains=query)[:10]  # Limita a 10 resultados
+            products = Producto.objects.filter(nombre__icontains=query)[:10]
             results = [
                 {
                     'id': product.id,
@@ -217,7 +215,7 @@ class CustomLoginView(LoginView):
     
 def mermas_publico(request):
     mermas = Merma.objects.select_related('producto', 'usuario').order_by('-fecha_registro')
-    return render(request, 'inventario/stock_publico', {  # Asegúrate de que esta plantilla exista
+    return render(request, 'inventario/stock_publico', { 
         'mermas': mermas
     })
 
@@ -248,7 +246,7 @@ def registrar_admin(request):
 @login_required
 def mermas_publico(request):
     mermas = Merma.objects.select_related('producto', 'usuario').order_by('-fecha_registro')
-    return render(request, 'inventario/mermas_publico.html', {  # Usa la plantilla correcta
+    return render(request, 'inventario/mermas_publico.html', { 
         'mermas': mermas
     })
 
@@ -262,25 +260,22 @@ def detalle_merma(request, merma_id):
 def registrar_admin(request):
     if request.method == 'POST':
         username = request.POST.get('username')
-        password = request.POST.get('password1')  # Cambiado a password1 para coincidir con el formulario
+        password = request.POST.get('password1') 
         password2 = request.POST.get('password2')
         email = request.POST.get('email', '')
 
-        # Validar que las contraseñas coincidan
         if password != password2:
             messages.error(request, 'Las contraseñas no coinciden.')
             return render(request, 'ingreso/registrar_admin.html', {
                 'form': {'username': username, 'email': email}
             })
 
-        # Validar si el usuario ya existe
         if User.objects.filter(username=username).exists():
             messages.error(request, 'El nombre de usuario ya existe.')
             return render(request, 'ingreso/registrar_admin.html', {
                 'form': {'username': username, 'email': email}
             })
 
-        # Crear el usuario
         try:
             user = User.objects.create_user(username=username, password=password, email=email, is_staff=True)
             login(request, user)

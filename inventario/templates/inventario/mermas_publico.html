@@ -6,7 +6,6 @@
     {% if user.is_authenticated %}
         <h1 class="mb-4">Mermas Registradas - Riquísimo</h1>
         
-        <!-- Filtros y botón de reporte -->
         <div class="card mb-4 shadow-sm">
             <div class="card-body">
                 <form method="get" class="row g-3 align-items-center">
@@ -47,7 +46,6 @@
             </div>
         </div>
         
-        <!-- Tabla de mermas -->
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0">Lista de Mermas</h5>
@@ -81,7 +79,6 @@
                     </table>
                 </div>
                 
-                <!-- Paginación -->
                 {% if is_paginated %}
                 <nav aria-label="Page navigation">
                     <ul class="pagination justify-content-center mt-4">
