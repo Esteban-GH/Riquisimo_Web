@@ -38,17 +38,6 @@ def stock_publico(request):
         'productos': productos
     })
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
-from django.contrib.auth.views import LoginView
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
-from django.contrib import messages
-from django.contrib.auth import logout
-from django.core.exceptions import ValidationError
-from .models import Producto, Merma
-from .forms import ProductoForm
-
 @login_required
 @require_http_methods(["GET", "POST"])
 def stock_admin(request):

@@ -13,19 +13,15 @@
             <p class="lead">Bienvenido, {{ user.username }}</p>
         </div>
         <div class="col-auto d-flex align-items-center">
-            <!-- Botón Nuevo Producto -->
-            <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
-                <i class="bi bi-plus-circle"></i> Nuevo Producto
-            </button>
-            <!-- Botón Mermas -->
-            <a href="{% url 'inventario:mermas_publico' %}" class="btn btn-info ms-2">
-                <i class="bi bi-clipboard-data"></i> Mermas
-            </a>
-            <a href="{% url 'inventario:registrar_admin' %}" class="btn btn-success ms-2">
-                <i class="bi bi-person-plus"></i> Registrar Usuario
-            </a>
-        </div>
-    </div>
+    <!-- Botón Nuevo Producto -->
+    <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
+        <i class="bi bi-plus-circle"></i> Nuevo Producto
+    </button>
+    <!-- Botón Mermas -->
+    <a href="{% url 'inventario:mermas_publico' %}" class="btn btn-primary ms-2">
+        <i class="bi bi-clipboard-data"></i> Registros de Mermas
+    </a>
+</div>
 
     <div id="mensajeExito" class="alert alert-success alert-dismissible fade show d-none" role="alert">
         <span id="mensajeTexto"></span>
