@@ -6,47 +6,122 @@
     {% if user.is_authenticated %}
         <h1 class="mb-4">Mermas Registradas - Riquísimo</h1>
         
+        <!-- Filtros y botón de reporte -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-center">
+                    <div class="col-md-3">
+                        <label for="mes" class="form-label">Mes</label>
+                        <select id="mes" name="mes" class="form-select">
+    <option value="1" {% if 1 == mes_actual %}selected{% endif %}>1 - Enero</option>
+    <option value="2" {% if 2 == mes_actual %}selected{% endif %}>2 - Febrero</option>
+    <option value="3" {% if 3 == mes_actual %}selected{% endif %}>3 - Marzo</option>
+    <option value="4" {% if 4 == mes_actual %}selected{% endif %}>4 - Abril</option>
+    <option value="5" {% if 5 == mes_actual %}selected{% endif %}>5 - Mayo</option>
+    <option value="6" {% if 6 == mes_actual %}selected{% endif %}>6 - Junio</option>
+    <option value="7" {% if 7 == mes_actual %}selected{% endif %}>7 - Julio</option>
+    <option value="8" {% if 8 == mes_actual %}selected{% endif %}>8 - Agosto</option>
+    <option value="9" {% if 9 == mes_actual %}selected{% endif %}>9 - Septiembre</option>
+    <option value="10" {% if 10 == mes_actual %}selected{% endif %}>10 - Octubre</option>
+    <option value="11" {% if 11 == mes_actual %}selected{% endif %}>11 - Noviembre</option>
+    <option value="12" {% if 12 == mes_actual %}selected{% endif %}>12 - Diciembre</option>
+</select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="año" class="form-label">Año</label>
+                        <input type="number" id="año" name="año" class="form-control" 
+                               value="{{ año_actual }}" min="2020" max="2030">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> Filtrar
+                        </button>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end justify-content-end">
+                        <a href="{% url 'inventario:reporte_mermas_pdf' %}?mes={{ request.GET.mes|default:mes_actual }}&año={{ request.GET.año|default:año_actual }}" 
+                           class="btn btn-danger">
+                            <i class="bi bi-file-earmark-pdf"></i> Generar PDF
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tabla de mermas -->
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0">Lista de Mermas</h5>
             </div>
             <div class="card-body">
+                {% if mermas %}
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
                                 <th>Producto</th>
-                                <th class="text-end">Cantidad Descontada</th>
+                                <th class="text-end">Cantidad</th>
+                                <th>Unidad</th>
                                 <th>Motivo</th>
                                 <th>Usuario</th>
                                 <th class="text-end">Fecha</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% if mermas %}
-                                {% for merma in mermas %}
-                                <tr>
-                                    <td>{{ merma.producto.nombre }}</td>
-                                    <td class="text-end">{{ merma.cantidad }}</td>
-                                    <td>{{ merma.motivo }}</td>
-                                    <td>{{ merma.usuario.username }}</td>
-                                    <td class="text-end">{{ merma.fecha_registro|date:"d/m/Y H:i" }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center">No hay mermas registradas</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="5" class="text-center">No hay mermas registradas</td>
-                                </tr>
-                            {% endif %}
+                            {% for merma in mermas %}
+                            <tr>
+                                <td>{{ merma.producto.nombre }}</td>
+                                <td class="text-end">{{ merma.cantidad }}</td>
+                                <td>{{ merma.producto.get_unidad_display }}</td>
+                                <td>{{ merma.motivo }}</td>
+                                <td>{{ merma.usuario.username|default:"N/A" }}</td>
+                                <td class="text-end">{{ merma.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Paginación -->
+                {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mt-4">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&mes={{ request.GET.mes }}&año={{ request.GET.año }}">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&mes={{ request.GET.mes }}&año={{ request.GET.año }}">Anterior</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&mes={{ request.GET.mes }}&año={{ request.GET.año }}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&mes={{ request.GET.mes }}&año={{ request.GET.año }}">Última</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="alert alert-info text-center">
+                    No hay mermas registradas para el período seleccionado
+                </div>
+                {% endif %}
+                
                 <div class="mt-3 text-end">
-                    <a href="{% url 'inventario:stock_admin' %}" class="btn btn-primary">Volver al Inventario</a>
+                    <a href="{% url 'inventario:stock_admin' %}" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-left"></i> Volver al Inventario
+                    </a>
                 </div>
             </div>
         </div>

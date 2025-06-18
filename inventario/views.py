@@ -30,6 +30,10 @@ from django.contrib.auth import login, authenticate
 from .forms import AdminUserCreationForm
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.views.generic import ListView 
+from .reportes import generar_reporte_mermas
+from datetime import datetime
+from django.http import HttpResponse, JsonResponse 
 
 
 def stock_publico(request):
@@ -289,3 +293,49 @@ def registrar_admin(request):
             })
 
     return render(request, 'ingreso/registrar_admin.html', {'form': {}})
+
+    
+class MermasPublicoView(ListView):
+    model = Merma
+    template_name = 'inventario/mermas_publico.html'
+    context_object_name = 'mermas'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('producto', 'usuario')
+        
+        mes = self.request.GET.get('mes')
+        año = self.request.GET.get('año')
+        
+        if mes and año:
+            queryset = queryset.filter(
+                fecha_registro__month=mes,
+                fecha_registro__year=año
+            )
+        
+        return queryset.order_by('-fecha_registro')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['mes_actual'] = datetime.now().month
+        context['año_actual'] = datetime.now().year
+        return context
+
+@login_required
+def generar_reporte_mermas_pdf(request):
+    mes = request.GET.get('mes', datetime.now().month)
+    año = request.GET.get('año', datetime.now().year)
+    
+    mermas = Merma.objects.filter(
+        fecha_registro__month=mes,
+        fecha_registro__year=año
+    ).select_related('producto', 'usuario')
+    
+    buffer = generar_reporte_mermas(mermas, mes, año)
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="reporte_mermas_{mes}_{año}.pdf"'
+    response.write(buffer.getvalue())
+    buffer.close()
+    
+    return response
