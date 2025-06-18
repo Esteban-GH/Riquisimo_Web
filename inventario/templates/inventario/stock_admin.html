@@ -13,22 +13,18 @@
             <p class="lead">Bienvenido, {{ user.username }}</p>
         </div>
         <div class="col-auto d-flex align-items-center">
-    <!-- Botón Nuevo Producto -->
-    <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
-        <i class="bi bi-plus-circle"></i> Nuevo Producto
-    </button>
-    <!-- Botón Mermas -->
-    <a href="{% url 'inventario:mermas_publico' %}" class="btn btn-primary ms-2">
-        <i class="bi bi-clipboard-data"></i> Registros de Mermas
-    </a>
-</div>
-
-    <div id="mensajeExito" class="alert alert-success alert-dismissible fade show d-none" role="alert">
-        <span id="mensajeTexto"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <!-- Botón Nuevo Producto -->
+            <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#agregarProductoModal">
+                <i class="bi bi-plus-circle"></i> Nuevo Producto
+            </button>
+            <!-- Botón Mermas -->
+            <a href="{% url 'inventario:mermas_publico' %}" class="btn btn-primary ms-2">
+                <i class="bi bi-clipboard-data"></i> Registros de Mermas
+            </a>
+        </div>
     </div>
 
-    <!-- Barra de búsqueda movida a la izquierda -->
+    <!-- Barra de búsqueda -->
     <div class="row mb-3">
         <div class="col">
             <div class="input-group" style="max-width: 300px;">
@@ -113,6 +109,9 @@
           <div class="mb-3">
             <label class="form-label">Nombre del Producto</label>
             <input type="text" class="form-control" name="nombre" required>
+             <div class="invalid-feedback" id="nombreProductoFeedback">
+            Por favor ingrese un nombre válido
+        </div>
           </div>
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -254,110 +253,181 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<!-- Animate.css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
 $(document).ready(function() {
+    // Configuración AJAX global
     $.ajaxSetup({
         beforeSend: function(xhr, settings) {
             if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
-                const token = $('[name=csrfmiddlewaretoken]').val();
-                xhr.setRequestHeader("X-CSRFToken", token);
+                xhr.setRequestHeader("X-CSRFToken", $('[name=csrfmiddlewaretoken]').val());
             }
         }
     });
 
-    $('[data-bs-toggle="tooltip"]').tooltip();
+    // Función para verificar si un producto ya existe
+    function productoExiste(nombre) {
+        let existe = false;
+        $('#productList .card-title').each(function() {
+            if ($(this).text().trim().toLowerCase() === nombre.trim().toLowerCase()) {
+                existe = true;
+                return false; // Salir del bucle
+            }
+        });
+        return existe;
+    }
 
-    $('#agregarProductoModal, #agregarStockModal, #quitarStockModal, #mermaModal').on('hidden.bs.modal', function () {
-        $(this).find('.btn-close').blur();
-    });
-
-    $('#searchInput').on('input', function() {
-        const query = $(this).val().trim().toLowerCase();
-        const productCards = $('#productList .col-xl-3');
-
-        if (query.length > 0) {
-            productCards.each(function() {
-                const productName = $(this).data('nombre');
-                if (productName.includes(query)) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
+    // Validación en tiempo real del nombre del producto
+    $('#agregarProductoModal input[name="nombre"]').on('input', function() {
+        const nombre = $(this).val();
+        const feedback = $('#nombreProductoFeedback');
+        const btnSubmit = $('#formAgregarProducto button[type="submit"]');
+        
+        if (productoExiste(nombre)) {
+            $(this).addClass('is-invalid');
+            feedback.text('¡Este producto ya existe!').removeClass('d-none');
+            btnSubmit.prop('disabled', true);
         } else {
-            productCards.show();
+            $(this).removeClass('is-invalid');
+            feedback.addClass('d-none');
+            btnSubmit.prop('disabled', false);
         }
     });
 
-    $('.btn-agregar').click(function() {
-        const productoId = $(this).data('id');
-        const productoNombre = $(this).data('nombre');
-        const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+    // Inicializar todos los componentes
+    function initComponents() {
+        // Tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
         
-        $('#agregarStockProductoId').val(productoId);
-        $('#agregarStockProductoNombre').val(productoNombre);
-        $('#agregarStockActual').val(stockActual);
-        $('#agregarStockError').addClass('d-none').text('');
-        $('#agregarStockModal').modal('show');
-    });
-
-    $('.btn-quitar').click(function() {
-        const productoId = $(this).data('id');
-        const productoNombre = $(this).data('nombre');
-        const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+        // Evento de búsqueda
+        $('#searchInput').off('input').on('input', function() {
+            const query = $(this).val().trim().toLowerCase();
+            $('#productList [data-nombre]').each(function() {
+                $(this).toggle($(this).data('nombre').includes(query));
+            });
+        });
         
-        $('#quitarStockProductoId').val(productoId);
-        $('#quitarStockProductoNombre').val(productoNombre);
-        $('#quitarStockActual').val(stockActual);
-        $('#quitarStockError').addClass('d-none').text('');
-        $('#quitarStockModal').modal('show');
-    });
+        // Asignar eventos a los botones
+        assignButtonEvents();
+    }
 
-    $('.btn-merma').click(function() {
-        const productoId = $(this).data('id');
-        const productoNombre = $(this).data('nombre');
-        const stockActual = $(this).closest('.card-body').find('.stock-value').text();
-        
-        $('#mermaProductoId').val(productoId);
-        $('#mermaProductoNombre').val(productoNombre);
-        $('#mermaStockActual').val(stockActual);
-        $('#mermaError').addClass('d-none').text('');
-        $('#mermaModal').modal('show');
-    });
-
-    $('.btn-eliminar').click(function() {
-        const productoId = $(this).data('id');
-        if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
-            $.ajax({
-                url: window.location.href,
-                method: 'POST',
-                data: {
-                    operation: 'delete',
-                    id: productoId,
-                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $(`[data-id="${productoId}"]`).closest('.col-xl-3').remove();
-                        $('#mensajeTexto').text('Producto eliminado correctamente');
-                        $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
-                    }
-                },
-                error: function(xhr) {
-                    const errorMsg = xhr.responseJSON && xhr.responseJSON.error 
-                        ? xhr.responseJSON.error 
-                        : 'Error al eliminar el producto';
-                    alert(errorMsg);
+    // Asignar eventos a los botones
+    function assignButtonEvents() {
+        // Eliminar producto
+        $('.btn-eliminar').off('click').on('click', function() {
+            const productoId = $(this).data('id');
+            const card = $(this).closest('.col-xl-3');
+            const productoNombre = card.find('.card-title').text();
+            
+            Swal.fire({
+                title: '¿Eliminar producto?',
+                html: `Estás a punto de eliminar el producto <strong>${productoNombre}</strong>.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: window.location.href,
+                        method: 'POST',
+                        data: {
+                            operation: 'delete',
+                            id: productoId
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                card.fadeOut(300, function() { $(this).remove(); });
+                                showSuccess('Producto eliminado correctamente');
+                            }
+                        },
+                        error: showError
+                    });
                 }
             });
-        }
-    });
+        });
 
+        // Agregar stock
+        $('.btn-agregar').off('click').on('click', function() {
+            const productoId = $(this).data('id');
+            const productoNombre = $(this).data('nombre');
+            const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+            
+            $('#agregarStockProductoId').val(productoId);
+            $('#agregarStockProductoNombre').val(productoNombre);
+            $('#agregarStockActual').val(stockActual);
+            $('#agregarStockModal').modal('show');
+        });
+
+        // Quitar stock
+        $('.btn-quitar').off('click').on('click', function() {
+            const productoId = $(this).data('id');
+            const productoNombre = $(this).data('nombre');
+            const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+            
+            $('#quitarStockProductoId').val(productoId);
+            $('#quitarStockProductoNombre').val(productoNombre);
+            $('#quitarStockActual').val(stockActual);
+            $('#quitarStockModal').modal('show');
+        });
+
+        // Registrar merma
+        $('.btn-merma').off('click').on('click', function() {
+            const productoId = $(this).data('id');
+            const productoNombre = $(this).data('nombre');
+            const stockActual = $(this).closest('.card-body').find('.stock-value').text();
+            
+            $('#mermaProductoId').val(productoId);
+            $('#mermaProductoNombre').val(productoNombre);
+            $('#mermaStockActual').val(stockActual);
+            $('#mermaModal').modal('show');
+        });
+    }
+
+    // Función para actualizar la lista de productos
+    function updateProductList() {
+        $.ajax({
+            url: window.location.href,
+            method: 'GET',
+            success: function(data) {
+                // Parsear el HTML recibido
+                const $response = $('<div>').html(data);
+                const newContent = $response.find('#productList').html();
+                
+                // Reemplazar el contenido con animación
+                $('#productList').fadeOut(200, function() {
+                    $(this).html(newContent).fadeIn(200, function() {
+                        initComponents();
+                    });
+                });
+            },
+            error: function() {
+                showError('Error al actualizar la lista');
+            }
+        });
+    }
+
+    // Formulario para agregar producto
     $('#formAgregarProducto').submit(function(e) {
         e.preventDefault();
         const form = $(this);
+        const nombreProducto = form.find('input[name="nombre"]').val();
         const errorDiv = $('#formAgregarProductoError');
         errorDiv.addClass('d-none').text('');
+        
+        // Validación adicional por si acaso
+        if (productoExiste(nombreProducto)) {
+            errorDiv.text('Este producto ya existe en el inventario').removeClass('d-none');
+            return false;
+        }
         
         $.ajax({
             url: window.location.href,
@@ -367,20 +437,25 @@ $(document).ready(function() {
                 if (response.success) {
                     $('#agregarProductoModal').modal('hide');
                     form[0].reset();
-                    $('#mensajeTexto').text(`Producto ${response.producto.nombre} agregado correctamente`);
-                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
-                    location.reload();
+                    
+                    showSuccess('Producto agregado correctamente').then(function() {
+                        updateProductList();
+                    });
                 }
             },
             error: function(xhr) {
-                const errorMsg = xhr.responseJSON && xhr.responseJSON.error 
-                    ? JSON.stringify(xhr.responseJSON.error) 
-                    : 'Error al agregar el producto';
-                errorDiv.text(errorMsg).removeClass('d-none');
+                if (xhr.status === 400 && xhr.responseJSON.error === 'El producto ya existe') {
+                    errorDiv.text('Este producto ya existe en el inventario').removeClass('d-none');
+                } else {
+                    errorDiv.text(
+                        xhr.responseJSON?.error || 'Error al agregar el producto'
+                    ).removeClass('d-none');
+                }
             }
         });
     });
 
+    // Formulario para agregar stock
     $('#formAgregarStock').submit(function(e) {
         e.preventDefault();
         const form = $(this);
@@ -390,7 +465,7 @@ $(document).ready(function() {
         errorDiv.addClass('d-none').text('');
         
         if (isNaN(cantidad) || cantidad <= 0) {
-            errorDiv.text('Por favor, ingrese una cantidad válida (número entero mayor a 0).').removeClass('d-none');
+            errorDiv.text('Ingrese una cantidad válida').removeClass('d-none');
             return;
         }
         
@@ -403,24 +478,24 @@ $(document).ready(function() {
                     $('#agregarStockModal').modal('hide');
                     form[0].reset();
                     
-                    const stockElement = $(`.btn-agregar[data-id="${response.producto_id}"]`).closest('.card-body').find('.stock-value');
-                    if (stockElement.length) {
-                        stockElement.text(response.nuevo_stock);
-                    }
+                    // Actualizar el stock visualmente
+                    $(`.btn-agregar[data-id="${response.producto_id}"]`)
+                        .closest('.card-body')
+                        .find('.stock-value')
+                        .text(response.nuevo_stock);
                     
-                    $('#mensajeTexto').text(`Stock actualizado: ${response.producto_nombre} - Nuevo stock: ${response.nuevo_stock}`);
-                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
+                    showSuccess(`Stock actualizado: ${response.nuevo_stock}`);
                 }
             },
             error: function(xhr) {
-                const errorMsg = xhr.responseJSON && xhr.responseJSON.error && xhr.responseJSON.error.cantidad 
-                    ? xhr.responseJSON.error.cantidad 
-                    : 'Error al actualizar el stock';
-                errorDiv.text(errorMsg).removeClass('d-none');
+                errorDiv.text(
+                    xhr.responseJSON?.error?.cantidad || 'Error al actualizar stock'
+                ).removeClass('d-none');
             }
         });
     });
 
+    // Formulario para quitar stock
     $('#formQuitarStock').submit(function(e) {
         e.preventDefault();
         const form = $(this);
@@ -431,11 +506,11 @@ $(document).ready(function() {
         errorDiv.addClass('d-none').text('');
         
         if (isNaN(cantidad) || cantidad <= 0) {
-            errorDiv.text('Por favor, ingrese una cantidad válida (número entero mayor a 0).').removeClass('d-none');
+            errorDiv.text('Ingrese una cantidad válida').removeClass('d-none');
             return;
         }
         if (cantidad > stockActual) {
-            errorDiv.text(`No puedes quitar ${cantidad} porque el stock actual es solo ${stockActual}.`).removeClass('d-none');
+            errorDiv.text(`No puede quitar más de ${stockActual}`).removeClass('d-none');
             return;
         }
         
@@ -448,24 +523,24 @@ $(document).ready(function() {
                     $('#quitarStockModal').modal('hide');
                     form[0].reset();
                     
-                    const stockElement = $(`.btn-quitar[data-id="${response.producto_id}"]`).closest('.card-body').find('.stock-value');
-                    if (stockElement.length) {
-                        stockElement.text(response.nuevo_stock);
-                    }
+                    // Actualizar el stock visualmente
+                    $(`.btn-quitar[data-id="${response.producto_id}"]`)
+                        .closest('.card-body')
+                        .find('.stock-value')
+                        .text(response.nuevo_stock);
                     
-                    $('#mensajeTexto').text(`Stock actualizado: ${response.producto_nombre} - Nuevo stock: ${response.nuevo_stock}`);
-                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
+                    showSuccess(`Stock actualizado: ${response.nuevo_stock}`);
                 }
             },
             error: function(xhr) {
-                const errorMsg = xhr.responseJSON && xhr.responseJSON.error && xhr.responseJSON.error.cantidad 
-                    ? xhr.responseJSON.error.cantidad 
-                    : 'Error al actualizar el stock';
-                errorDiv.text(errorMsg).removeClass('d-none');
+                errorDiv.text(
+                    xhr.responseJSON?.error?.cantidad || 'Error al actualizar stock'
+                ).removeClass('d-none');
             }
         });
     });
 
+    // Formulario para registrar merma
     $('#formMerma').submit(function(e) {
         e.preventDefault();
         const form = $(this);
@@ -476,11 +551,11 @@ $(document).ready(function() {
         errorDiv.addClass('d-none').text('');
         
         if (isNaN(cantidad) || cantidad <= 0) {
-            errorDiv.text('Por favor, ingrese una cantidad válida (número entero mayor a 0).').removeClass('d-none');
+            errorDiv.text('Ingrese una cantidad válida').removeClass('d-none');
             return;
         }
         if (cantidad > stockActual) {
-            errorDiv.text(`No puedes registrar una merma de ${cantidad} porque el stock actual es solo ${stockActual}.`).removeClass('d-none');
+            errorDiv.text(`No puede registrar más de ${stockActual}`).removeClass('d-none');
             return;
         }
         
@@ -493,23 +568,52 @@ $(document).ready(function() {
                     $('#mermaModal').modal('hide');
                     form[0].reset();
                     
-                    const stockElement = $(`.btn-merma[data-id="${response.producto_id}"]`).closest('.card-body').find('.stock-value');
-                    if (stockElement.length) {
-                        stockElement.text(response.nuevo_stock);
-                    }
+                    // Actualizar el stock visualmente
+                    $(`.btn-merma[data-id="${response.producto_id}"]`)
+                        .closest('.card-body')
+                        .find('.stock-value')
+                        .text(response.nuevo_stock);
                     
-                    $('#mensajeTexto').text(`Merma registrada: ${response.producto_nombre} - Nuevo stock: ${response.nuevo_stock}`);
-                    $('#mensajeExito').removeClass('d-none').delay(3000).fadeOut();
+                    showSuccess(`Merma registrada. Nuevo stock: ${response.nuevo_stock}`);
                 }
             },
             error: function(xhr) {
-                const errorMsg = xhr.responseJSON && xhr.responseJSON.error && xhr.responseJSON.error.cantidad 
-                    ? xhr.responseJSON.error.cantidad 
-                    : 'Error al registrar merma';
-                errorDiv.text(errorMsg).removeClass('d-none');
+                errorDiv.text(
+                    xhr.responseJSON?.error?.cantidad || 'Error al registrar merma'
+                ).removeClass('d-none');
             }
         });
     });
+
+    // Funciones auxiliares
+    function showSuccess(message) {
+        return Swal.fire({
+            title: '¡Éxito!',
+            text: message,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    }
+
+    function showError(message) {
+        Swal.fire({
+            title: 'Error',
+            text: message || 'Ocurrió un error',
+            icon: 'error'
+        });
+    }
+
+    // Inicializar modales
+    $('.modal').on('hidden.bs.modal', function() {
+        $(this).find('form')[0].reset();
+        $(this).find('.alert').addClass('d-none');
+    });
+
+    // Inicializar todo al cargar
+    initComponents();
 });
 </script>
 {% endblock %}
