@@ -100,14 +100,18 @@
         <input type="hidden" name="operation" value="create">
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">Nombre del Producto</label>
-            <input type="text" class="form-control" name="nombre" required>
-            
-          </div>
+    <label class="form-label">Nombre del Producto</label>
+    <input type="text" class="form-control" name="nombre" required>
+    <div id="nombreProductoFeedback" class="invalid-feedback d-none">
+        ¡Este producto ya existe en el inventario!
+    </div>
+</div>
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label">Cantidad</label>
               <input type="number" step="1" min="0" class="form-control" name="cantidad" required>
+               <div id="stockFeedback" class="invalid-feedback">
+               </div>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Unidad</label>
@@ -266,21 +270,19 @@ $(document).ready(function() {
         return existe;
     }
 
-    $('#agregarProductoModal input[name="nombre"]').on('input', function() {
-        const nombre = $(this).val();
-        const feedback = $('#nombreProductoFeedback');
-        const btnSubmit = $('#formAgregarProducto button[type="submit"]');
-        
-        if (productoExiste(nombre)) {
-            $(this).addClass('is-invalid');
-            feedback.text('¡Este producto ya existe!').removeClass('d-none');
-            btnSubmit.prop('disabled', true);
-        } else {
-            $(this).removeClass('is-invalid');
-            feedback.addClass('d-none');
-            btnSubmit.prop('disabled', false);
-        }
-    });
+$('#agregarProductoModal').on('hidden.bs.modal', function() {
+    const $inputNombre = $(this).find('input[name="nombre"]');
+    const $feedback = $('#nombreProductoFeedback');
+    const $btnSubmit = $('#formAgregarProducto button[type="submit"]');
+
+    $inputNombre.val('').removeClass('is-invalid');
+    $feedback.addClass('d-none');
+    $btnSubmit.prop('disabled', false);
+
+    if ($inputNombre.hasClass('is-invalid')) {
+        $inputNombre.tooltip('dispose');
+    }
+});
 
     function initComponents() {
         $('[data-bs-toggle="tooltip"]').tooltip();
@@ -385,44 +387,82 @@ $(document).ready(function() {
         });
     }
 
-    $('#formAgregarProducto').submit(function(e) {
-        e.preventDefault();
-        const form = $(this);
-        const nombreProducto = form.find('input[name="nombre"]').val();
-        const errorDiv = $('#formAgregarProductoError');
-        errorDiv.addClass('d-none').text('');
-        
-        if (productoExiste(nombreProducto)) {
-            errorDiv.text('Este producto ya existe en el inventario').removeClass('d-none');
-            return false;
-        }
-        
-        $.ajax({
-            url: window.location.href,
-            method: 'POST',
-            data: form.serialize(),
-            success: function(response) {
-                if (response.success) {
-                    $('#agregarProductoModal').modal('hide');
-                    form[0].reset();
-                    
-                    showSuccess('Producto agregado correctamente').then(function() {
-                        updateProductList();
-                    });
-                }
-            },
-            error: function(xhr) {
-                if (xhr.status === 400 && xhr.responseJSON.error === 'El producto ya existe') {
-                    errorDiv.text('Este producto ya existe en el inventario').removeClass('d-none');
-                } else {
-                    errorDiv.text(
-                        xhr.responseJSON?.error || 'Error al agregar el producto'
-                    ).removeClass('d-none');
-                }
-            }
-        });
-    });
+ $('#formAgregarProducto').submit(function(e) {
+    e.preventDefault();
+    const form = $(this);
+    const nombre = form.find('input[name="nombre"]').val().trim();
+    const cantidad = form.find('input[name="cantidad"]').val();
+    const nombreFeedback = $('#nombreProductoFeedback');
+    const cantidadFeedback = $('#stockFeedback'); // Asegúrate de tener este elemento en tu HTML
+    const errorDiv = $('#formAgregarProductoError');
 
+    // Resetear todos los estados de error
+    form.find('.is-invalid').removeClass('is-invalid');
+    nombreFeedback.addClass('d-none');
+    cantidadFeedback.addClass('d-none');
+    errorDiv.addClass('d-none');
+
+    // Validación del nombre
+    if (!nombre) {
+        form.find('input[name="nombre"]').addClass('is-invalid');
+        nombreFeedback.text('El nombre del producto es obligatorio').removeClass('d-none');
+        return false;
+    }
+
+    // Validación de producto existente
+    if (productoExiste(nombre)) {
+        form.find('input[name="nombre"]').addClass('is-invalid');
+        nombreFeedback.text('Este producto ya existe en el inventario').removeClass('d-none');
+        return false;
+    }
+
+    // Validación del stock
+    if (!cantidad) {
+        form.find('input[name="cantidad"]').addClass('is-invalid');
+        cantidadFeedback.text('El stock es obligatorio').removeClass('d-none');
+        return false;
+    }
+
+    if (isNaN(cantidad) || cantidad <= 0) {
+        form.find('input[name="cantidad"]').addClass('is-invalid');
+        cantidadFeedback.text('Ingrese un número válido mayor a 0').removeClass('d-none');
+        return false;
+    }
+
+    // Envío AJAX
+    $.ajax({
+        url: window.location.href,
+        method: 'POST',
+        data: form.serialize(),
+        success: function(response) {
+            if (response.success) {
+                $('#agregarProductoModal').modal('hide');
+                form[0].reset();
+                showSuccess('Producto agregado correctamente').then(updateProductList);
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = 'Error al procesar la solicitud';
+            
+            if (xhr.responseJSON) {
+                if (xhr.responseJSON.errors) {
+                    // Manejar errores específicos de campos
+                    if (xhr.responseJSON.errors.nombre) {
+                        form.find('input[name="nombre"]').addClass('is-invalid');
+                        nombreFeedback.text(xhr.responseJSON.errors.nombre).removeClass('d-none');
+                    }
+                    if (xhr.responseJSON.errors.cantidad) {
+                        form.find('input[name="cantidad"]').addClass('is-invalid');
+                        cantidadFeedback.text(xhr.responseJSON.errors.cantidad).removeClass('d-none');
+                    }
+                    return;
+                }
+                errorMsg = xhr.responseJSON.error || errorMsg;
+            }
+            errorDiv.text(errorMsg).removeClass('d-none');
+        }
+    });
+});
     $('#formAgregarStock').submit(function(e) {
         e.preventDefault();
         const form = $(this);
