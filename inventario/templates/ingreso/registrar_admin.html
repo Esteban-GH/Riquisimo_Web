@@ -11,81 +11,29 @@
                 </div>
 
                 <div class="card-body p-4">
-                    {% if messages %}
-                        <div id="alert-messages">
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        <script>
-                            setTimeout(() => {
-                                const alertContainer = document.getElementById('alert-messages');
-                                if (alertContainer) {
-                                    alertContainer.style.transition = "opacity 0.5s ease";
-                                    alertContainer.style.opacity = '0';
-                                    setTimeout(() => alertContainer.remove(), 500);
-                                }
-                            }, 4000);
-                        </script>
-                    {% endif %}
-
                     <form method="post" action="{% url 'inventario:registrar_admin' %}" class="needs-validation" novalidate autocomplete="off" id="registroForm">
                         {% csrf_token %}
 
                         <div class="mb-3 position-relative">
                             <label for="id_username" class="form-label fw-bold text-primary">Usuario</label>
                             <input type="text" name="username" class="form-control form-control-lg shadow-sm" id="id_username" required autocomplete="off" minlength="4" value="{{ form.username.value|default_if_none:'' }}">
-                            {% if form.username.errors %}
-                                <div class="text-danger mt-1">
-                                    {% if 'Este campo es obligatorio.' in form.username.errors or 'This field is required.' in form.username.errors %}
-                                        Por favor ingresa un nombre de usuario.
-                                    {% else %}
-                                        {{ form.username.errors.0 }}
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-                            <div id="errorUsername" class="text-danger mt-1" style="display:none;">
-                                Por favor ingresa un usuario válido (mínimo 4 caracteres).
+                            <div id="errorUsername" class="invalid-feedback">
+                                Por favor ingresa un nombre de usuario
                             </div>
                         </div>
 
                         <div class="mb-3 position-relative">
                             <label for="id_password1" class="form-label fw-bold text-primary">Contraseña</label>
                             <input type="password" name="password1" class="form-control form-control-lg shadow-sm" id="id_password1" required autocomplete="new-password" minlength="8">
-                            {% if form.password1.errors %}
-                                <div class="text-danger mt-1">
-                                    {% if 'Este campo es obligatorio.' in form.password1.errors or 'This field is required.' in form.password1.errors %}
-                                        Por favor ingresa una contraseña.
-                                    {% else %}
-                                        {{ form.password1.errors.0 }}
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-                            <div id="errorPassword" class="text-danger mt-1" style="display:none;">
-                                La contraseña debe tener mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número.
+                            <div id="errorPassword" class="invalid-feedback">
+                                Por favor ingresa una contraseña
                             </div>
                         </div>
 
                         <div class="mb-3 position-relative">
                             <label for="id_password2" class="form-label fw-bold text-primary">Confirmar Contraseña</label>
                             <input type="password" name="password2" class="form-control form-control-lg shadow-sm" id="id_password2" required autocomplete="new-password">
-                            {% if form.password2.errors %}
-                                <div class="text-danger mt-1">
-                                    {% if 'Este campo es obligatorio.' in form.password2.errors or 'This field is required.' in form.password2.errors %}
-                                        Por favor confirma la contraseña.
-                                    {% elif 'Las dos contraseñas no coinciden.' in form.password2.errors or 'The two password fields didn’t match.' in form.password2.errors %}
-                                        Las contraseñas no coinciden.
-                                    {% else %}
-                                        {{ form.password2.errors.0 }}
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-                            <div id="errorConfirmPassword" class="text-danger mt-1" style="display:none;">
-                                Las contraseñas no coinciden.
+                            <div id="errorConfirmPassword" class="invalid-feedback">
                             </div>
                         </div>
 
@@ -102,32 +50,57 @@
 </div>
 
 <script>
-function validarFormulario() {
-    document.getElementById('errorUsername').style.display = 'none';
-    document.getElementById('errorPassword').style.display = 'none';
-    document.getElementById('errorConfirmPassword').style.display = 'none';
-
-    const usuario = document.getElementById('id_username').value.trim();
-    const password = document.getElementById('id_password1').value;
-    const confirmPassword = document.getElementById('id_password2').value;
-
-    if (usuario.length < 4) {
-        document.getElementById('errorUsername').style.display = 'block';
-        return false;
-    }
-
-    const regexPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!regexPassword.test(password)) {
-        document.getElementById('errorPassword').style.display = 'block';
-        return false;
-    }
-
-    if (password !== confirmPassword) {
-        document.getElementById('errorConfirmPassword').style.display = 'block';
-        return false;
-    }
-
-    return true;
-}
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registroForm');
+    const password1 = document.getElementById('id_password1');
+    const password2 = document.getElementById('id_password2');
+    const errorConfirm = document.getElementById('errorConfirmPassword');
+    
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        const username = document.getElementById('id_username');
+        if (username.value.trim() === '') {
+            username.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            username.classList.remove('is-invalid');
+        }
+        
+        if (password1.value === '') {
+            password1.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            password1.classList.remove('is-invalid');
+        }
+        
+        if (password2.value === '') {
+            errorConfirm.textContent = 'Por favor confirma tu contraseña';
+            password2.classList.add('is-invalid');
+            isValid = false;
+        } else if (password1.value !== password2.value) {
+            errorConfirm.textContent = 'Las contraseñas no coinciden';
+            password2.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            password2.classList.remove('is-invalid');
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+    
+    [password1, password2].forEach(field => {
+        field.addEventListener('input', function() {
+            if (this.value.trim() !== '') {
+                this.classList.remove('is-invalid');
+                if (this === password2 && password1.value === password2.value) {
+                    this.classList.remove('is-invalid');
+                }
+            }
+        });
+    });
+});
 </script>
-{% endblock %}
+{% endblock %}  
